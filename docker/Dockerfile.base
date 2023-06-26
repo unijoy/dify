@@ -2,10 +2,15 @@ FROM nginx:1.22
 
 # ensure local python is preferred over distribution python
 ENV PATH /usr/local/bin:$PATH
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # http://bugs.python.org/issue19846
 # > At the moment, setting "LANG=C" on a Linux system *fundamentally breaks Python 3*, and that's not OK.
 ENV LANG C.UTF-8
+
+RUN mv /etc/apt/sources.list /etc/apt/sources.list.bk
+COPY sources.list /etc/apt/sources.list
 
 # runtime dependencies
 RUN set -eux; \
@@ -157,6 +162,7 @@ RUN set -eux; \
 		"setuptools==$PYTHON_SETUPTOOLS_VERSION" \
 	; \
 	rm -f get-pip.py; \
+	pip config set global.index-url https://mirrors.cloud.tencent.com/pypi/simple; \
 	\
 	pip --version
 
@@ -251,6 +257,6 @@ RUN apt-get update && \
     apt-get install -y bash curl wget vim gcc g++ python3-dev libc-dev libffi-dev
 
 RUN pip3 install gunicorn
-RUN npm install pm2 -g
+RUN npm config set registry "https://registry.npm.taobao.org" && npm install pm2 -g
 
 ENTRYPOINT ["/usr/local/bin/pm2-runtime", "start"]
